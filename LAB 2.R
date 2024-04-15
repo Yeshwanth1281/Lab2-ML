@@ -7,7 +7,7 @@ students <- read.csv(r"(C:\Users\peddo\OneDrive\Desktop\Lab2\Students.csv)")
 students
 
 # Data preprocessing: Transform 'final_result' into a binary variable and 'disability' into a factor
-students$pass <- as.factor(ifelse(students$final_result == "Pass", 1, 0))
+students$is_passed <- as.factor(ifelse(students$final_result == "Pass", 1, 0))
 students$credits <- as.factor(students$studied_credits)
 
 
@@ -20,11 +20,11 @@ set.seed(20230712)  # Setting seed for reproducibility
 sample_count <- floor(0.8 * nrow(students)) #Splitting the data into 80% as train data and 20% as test data.
 training <- sample(seq_len(nrow(students)), size = sample_count)
 
-train_data <- students[training ]
-test_data <- students[-training ]
+train_data <- students[training, ]
+test_data <- students[-training, ]
 
 # Building a logistic regression model with glm (Generalized Linear Model) in base R
-logit_model <- glm(pass ~ credits + imd_numeric, family = binomial(link = "logit"), data = train_data)
+logit_model <- glm(is_passed ~ credits + imd_numeric, family = binomial(link = "logit"), data = train_data)
 
 # Model summary display.
 summary(logit_model)
