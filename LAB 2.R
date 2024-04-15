@@ -1,49 +1,61 @@
-# Ensure the 'studentS.csv' file is in the current working directory. Check with getwd() and change with setwd() as needed.
+# Load necessary libraries
+library(tidyverse)
+library(caret)
+library(glmnet)
 
-# Loading the student data using base R read.csv function
-students <- read.csv(r"(C:\Users\peddo\OneDrive\Desktop\Lab2\Students.csv)")
+# Set working directory
+setwd("C:/Users/peddo/Downloads/")
 
-#Display the dataset.
-students
+# Read the datasets
+students <- read.csv("students.csv")
+assessments <- read.csv("assessments.csv")
 
-# Data preprocessing: Transform 'final_result' into a binary variable and 'disability' into a factor
-students$is_passed <- as.factor(ifelse(students$final_result == "Pass", 1, 0))
-students$credits <- as.factor(students$studied_credits)
+# Merge datasets
+merge_data <- merge(students, assessments, by = c("id_student", "code_module", "code_presentation"))
 
+# Remove rows with missing values
+merge_data <- merge_data %>% drop_na()
 
-# Convert 'imd_band' to a numeric scale based on given categories
-imd_scale <- c("0-10%", "10-20%", "20-30%", "30-40%", "40-50%", "50-60%", "60-70%", "70-80%", "80-90%", "90-100%")
-students$imd_numeric <- as.numeric(factor(students$imd_band, levels = imd_scale))
+# Convert date columns to Date type
+date_columns <- c("date", "date_submitted")
+merge_data[date_columns] <- lapply(merge_data[date_columns], as.Date)
 
-# Creating train and test sets manually
-set.seed(20230712)  # Setting seed for reproducibility
-sample_count <- floor(0.8 * nrow(students)) #Splitting the data into 80% as train data and 20% as test data.
-training <- sample(seq_len(nrow(students)), size = sample_count)
+# Convert categorical columns to factors
+categorical_columns <- c("gender", "region", "highest_education", "imd_band", "age_band", "final_result", "assessment_type")
+merge_data[categorical_columns] <- lapply(merge_data[categorical_columns], as.factor)
 
-train_data <- students[training, ]
-test_data <- students[-training, ]
+# Classification Model (predicting final_result)
+# Split data into training and testing sets
+set.seed(123)
+trainIndex <- createDataPartition(merge_data$final_result, p = 0.7, list = FALSE)
+train_data <- merge_data[trainIndex, ]
+test_data <- merge_data[-trainIndex, ]
 
-# Building a logistic regression model with glm (Generalized Linear Model) in base R
-logit_model <- glm(is_passed ~ credits + imd_numeric, family = binomial(link = "logit"), data = train_data)
+# Train a classification model (using logistic regression as an example)
+clf_formula <- final_result ~ . - id_student - date - date_registration - date_unregistration
+clf_model <- glm(classification_formula, data = train_data, family = binomial)
 
-# Model summary display.
-summary(logit_model)
+# Predict on test data
+predictions_clf <- predict(clf_model, newdata = test_data, type = "response")
 
-#Tidying the model 
-library(tidymodels)
-tidy(logit_model)
+# reg Model (predicting score)
+# Train a regression model
+reg_formula <- score ~ . - id_student - date - date_registration - date_unregistration
+reg_model <- glm(reg_formula, data = train_data)
 
-#Plotting the model.
-plot(logit_model)
+# Predict on test data
+predictions_reg <- predict(reg_model, newdata = test_data)
 
-# Prediction on test data
-test_predictions <- predict(logit_model, test_data, type = "response")
-predicted_outcome <- ifelse(test_predictions > 0.5, 1, 0)
+# Model interpretation
+# Classification model summary
+summary(clf_model)
 
-# Accuracy calculation
-true_outcomes <- as.numeric(test_data$is_passed) - 1  # Adjusting factor levels from 1 to 0 and 1 for comparison
-model_accuracy <- mean(predicted_outcome == true_outcomes)
-print(paste("Model Accuracy:", model_accuracy))
+#Tidy up the classification Summary
+tidy(clf_model)
 
+# regression model summary
+summary(reg_model)
 
+#Tidy up the regression Summary
+tidy(reg_model)
 
