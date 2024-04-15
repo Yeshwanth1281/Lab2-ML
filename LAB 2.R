@@ -45,5 +45,5 @@ true_outcomes <- as.numeric(test_data$is_passed) - 1  # Adjusting factor levels 
 model_accuracy <- mean(predicted_outcome == true_outcomes)
 print(paste("Model Accuracy:", model_accuracy))
 
-# This script uses only base R functions and does not rely on additional libraries like tidyverse or tidymodels.
+
 
